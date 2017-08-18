@@ -19,6 +19,19 @@ class Merchant < ApplicationRecord
     value.first
   end
 
+  def self.revenue_for_one_merchant_by_date(id, date)
+    value = Merchant.find_by_sql [
+      "SELECT merchants.name merchant_name, invoices.updated_at AS date, ROUND(SUM(invoice_items.quantity * invoice_items.unit_price / 100.00),2) AS revenue
+      FROM merchants
+      INNER JOIN items ON merchants.id = items.merchant_id
+      INNER JOIN invoice_items ON items.id = invoice_items.item_id
+      INNER JOIN invoices ON invoices.id = invoice_items.invoice_id
+      INNER JOIN transactions ON transactions.invoice_id = invoices.id
+      WHERE merchants.id = #{id} AND invoices.updated_at = '#{date}' AND transactions.result = 'success'
+      GROUP BY merchant_name, date" ]
+    value.first
+  end
+
   def self.revenue_for_merchant(merchant_id)
     Invoice.joins(:invoice_items, :transactions)
         .joins(:invoice_items)
